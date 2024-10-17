@@ -8,9 +8,12 @@ Mohamadreza Fazel, Reza Hoseini, Maryam Mahmoodi, Kevin Lynn Scrudders, Lance W.
 
 
 # Input parameters
-Data: input data is a 4D array with the 1st and 2nd dimensions are frame\\
-       sizes, the 3rd dimension is number of frames from each plane, and\\
-       the fourth dimension is number of planes.\\
+Data: input data is a 4D array with the 1st and 2nd dimensions are frame
+
+       sizes, the 3rd dimension is number of frames from each plane, and
+       
+       the fourth dimension is number of planes.
+       
 Struct: structure containing experimental parameters
     Na: numerical aperture
     N: refractive index
