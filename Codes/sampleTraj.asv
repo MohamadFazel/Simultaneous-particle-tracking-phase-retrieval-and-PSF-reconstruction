@@ -1,0 +1,128 @@
+function [X,Y,Z,PSFstack,AcceptX] = sampleTraj(Data,Chain,PSFstack,BNP,...
+              Struct,DefocusK,Mask,DelX,AcceptX,XOffsetPhase,YOffsetPhase,...
+              tmpPhase,SubPixelZeros,StartInd,EndInd,SubPixel,Tform,SigConv,Temp,CMOS_Noise)
+%This function samples the x-trajectory, y-trajectory and z-trajectory
+%
+%INPUTS
+% Data: the input data is a 4D array with the 3rd abd 4th dimension being
+%       the frames and the planes.
+% Chain: Chain of samples (for decription see "runPhaseRetrieval" help)
+% PSFstack: the current model 4D array with a size similar to the data
+% BNP: structure containing parameters used in the algorithm (for decription
+%      see "runPhaseRetrieval" help)
+% Struct: Structure containing parameters of the experiment 
+
+
+% Chol_A: Choleski decomposition of magnitude correlation kernel
+% Chol_Phi: Choleski decomposition of phase correlation kernel
+% DefoucusK: phase due to one nanometer offset with respect to focus
+% Mask: one over the frequency range passed by the objective and zero otherwise
+% DelX: axial location difference between the planes (first plane is reference)
+% AcceptJ: number of accepted proposals for pupil phase and magnitude
+% XOffsetPhase: phase due to one nanometer movement along the x-axis
+% YOffsetPhase: phase due to one nanometer movement along the y-axis
+% tmpPhase: pupil phase after subracting the location contribution
+% Z0: zero order Zernike polynomial
+% Zx: Zernike polynomial associated to x-displacement
+% Zy: Zernike polynomial associated to y-displacement
+% Zz: Zernike polynomial associated to z-displacement
+% SubPixelZeros: a zero frame with the subpixel size used in zero-padding
+% StartInd: starting index used in zero-padding
+% EndInd: end index used in zero padding
+% SubPixel: number of model subpixels within a data pixel
+% Tform: a 3x3 matrix of affine transform used in plane registeration
+% SigConv: Sigma of the Gaussian to smotthen the model
+% Temp: temperature for temporal sampling
+% CMOS_Noise: pixel-map of CMOS camera noise (zero)
+%
+%OUTPUS:
+% Mag: updated magnitude
+% Phase: updated phase
+% tmpPhase: updated phase without contribution from phase due to location
+% PSFstack: updated model using new phase and magnitude
+% acceptJ: updated number of accepted proposals
+%
+%Author:
+%   Mohamadreza Fazel, Presse lab, 2024
+%
+
+Phase = Chain.Phase;
+Mag = Chain.Mag;
+Bg = Chain.Bg;
+I = Chain.I;
+Sig = 2;
+X = Chain.X;
+Y = Chain.Y;
+Z = Chain.Z;
+D = Chain.D;
+Dt = BNP.Dt;
+Sig_D = sqrt(2*D*Dt);
+
+tmp = rand();
+if tmp < 0.2
+    tX = X + Sig*randn(size(X));
+    tY = Y + Sig*randn(size(Y));
+    tZ = Z + 2*Sig*randn(size(Z));
+% elseif tmp > 0.75
+%     tX = X + Sig*randn();
+%     tY = Y + Sig*randn();
+%     tZ = Z + Sig*randn();
+else
+    U = rand(3,length(X));
+    NormU = repmat(sqrt(sum(U.^2)),[3 1]);
+    U = U./NormU;
+    Lambda = Sig*randn();
+    tX = X + Lambda*U(1,:);
+    tY = Y + Lambda*U(2,:);
+    tZ = Z + Lambda*U(3,:);
+end
+
+tPSF = [];
+for ii = 1:size(DelX,1)
+    tPSF = cat(4,tPSF,findPSF(Mag,tmpPhase,Bg(ii),I(ii),DefocusK,tZ+DelX(ii,3),Mask,...
+        SubPixelZeros,StartInd,EndInd,SubPixel,tX+DelX(ii,1),tY+DelX(ii,2),...
+        XOffsetPhase,YOffsetPhase,Tform(ii),SigConv,CMOS_Noise(:,:,ii)));
+end
+DLogL = sum(Data(:).*(log(tPSF(:))-log(PSFstack(:)))-(tPSF(:)-PSFstack(:)));
+DLogL = DLogL/Temp;
+
+SigX = Struct.NPix*Struct.PixelSize/2;
+DLPrior1X = sum(log(normpdf(tX(1),0,SigX)) ...
+    -log(normpdf(X(1),0,SigX)));
+DLPrior1Y = sum(log(normpdf(tY(1),0,SigX)) ...
+    -log(normpdf(Y(1),0,SigX)));
+DLPrior1Z = sum(log(normpdf(tZ(1),0,SigX)) ...
+    -log(normpdf(Z(1),0,SigX)));
+
+DLPriorX = sum(log(normpdf(tX(2:end),tX(1:end-1),Sig_D)) ...
+    -log(normpdf(X(2:end),X(1:end-1),Sig_D)));
+DLPriorY = sum(log(normpdf(tY(2:end),tY(1:end-1),Sig_D)) ...
+    -log(normpdf(Y(2:end),Y(1:end-1),Sig_D)));
+DLPriorZ = sum(log(normpdf(tZ(2:end),tZ(1:end-1),Sig_D)) ...
+    -log(normpdf(Z(2:end),Z(1:end-1),Sig_D)));
+
+DLogPost = DLogL + DLPrior1X + DLPrior1Y + DLPrior1Z + DLPriorX + DLPriorY + DLPriorZ;
+
+if DLogPost > log(rand())
+    X = tX;
+    Y = tY;
+    Z = tZ;
+    PSFstack = tPSF;
+    AcceptX = AcceptX + 1;
+end
+
+DEBUG = 0;
+if DEBUG
+   figure(210);hold;
+   plot(X,'o-');ylabel('X')
+   hold off
+   figure(211);hold;
+   plot(Y,'o-');ylabel('Y')
+   hold off
+   figure(212);hold;
+   plot(Z,'o-');ylabel('Z')
+   hold off
+   pause(0.2)
+end
+
+end

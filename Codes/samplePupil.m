@@ -1,0 +1,124 @@
+function [Mag,Phase,tmpPhase,PSFstack,AcceptJ]=samplePupil(Data,Chain,PSFstack,Chol_A,...
+    Chol_Phi,DefocusK,Mask,DelX,AcceptJ,XOffsetPhase,YOffsetPhase,tmpPhase,Z0,...
+    Zx,Zy,Zz,SubPixelZeros,StartInd,EndInd,SubPixel,Tform,SigConv,Temp,CMOS_Noise)
+%This function samples the pupil phase and amplitude.
+%
+%INPUTS
+% Data: the input data is a 4D array with the 3rd abd 4th dimension being
+%       the frames and the planes.
+% Chain: Chain of samples (for decription see "runPhaseRetrieval" help)
+% PSFstack: the current model 4D array with a size similar to the data
+% Chol_A: Choleski decomposition of magnitude correlation kernel
+% Chol_Phi: Choleski decomposition of phase correlation kernel
+% DefoucusK: phase due to one nanometer offset with respect to focus
+% Mask: one over the frequency range passed by the objective and zero otherwise
+% DelX: axial location difference between the planes (first plane is
+%       reference) (nm)
+% AcceptJ: number of accepted proposals for pupil phase and magnitude
+% XOffsetPhase: phase due to one nanometer movement along the x-axis
+% YOffsetPhase: phase due to one nanometer movement along the y-axis
+% tmpPhase: pupil phase after subracting the location contribution
+% Z0: zero order Zernike polynomial
+% Zx: Zernike polynomial associated to x-displacement
+% Zy: Zernike polynomial associated to y-displacement
+% Zz: Zernike polynomial associated to z-displacement
+% SubPixelZeros: a zero frame with the subpixel size used in zero-padding
+% StartInd: starting index used in zero-padding
+% EndInd: end index used in zero padding
+% SubPixel: number of model subpixels within a data pixel
+% Tform: a 3x3 matrix of affine transform used in plane registeration
+% SigConv: Sigma of the Gaussian to smotthen the model
+% Temp: temperature for temporal sampling
+% CMOS_Noise: pixel-map of CMOS camera noise (zero)
+%
+%OUTPUS:
+% Mag: updated magnitude
+% Phase: updated phase
+% tmpPhase: updated phase without contribution from phase due to location
+% PSFstack: updated model using new phase and magnitude
+% acceptJ: number of accepted proposals
+%
+%Author:
+%   Mohamadreza Fazel, Presse lab, 2024
+%
+
+Phase = Chain.Phase;
+Mag = Chain.Mag;
+Bg = Chain.Bg;
+I = Chain.I;
+Sig = 0.01;
+X = Chain.X;
+Y = Chain.Y;
+Z = Chain.Z;
+
+%generating multivariate Gaussian random number using Choleski decomposition
+tPhase = (Phase(:) + Sig*((randn([1,numel(Phase)])*Chol_Phi))');
+tPhase = reshape(tPhase,size(Mask));
+
+%subtracting phases due to location from the input pupil phase
+SubPhase = tPhase;
+for ii = 1:2
+    XShift = sum(sum(SubPhase.*Zx.*Mask))/sum(sum(Zx.*Zx.*Mask));
+    YShift = sum(sum(SubPhase.*Zy.*Mask))/sum(sum(Zy.*Zy.*Mask));
+    ZShift = sum(sum(SubPhase.*Zz.*Mask))/sum(sum(Zz.*Zz.*Mask));
+    Offset = sum(sum(SubPhase.*Z0.*Mask))/sum(sum(Z0.*Z0.*Mask));
+    SubPhase = (SubPhase - XShift*Zx ...
+        - YShift*Zy - ZShift*Zz - Offset*Z0).*Mask;
+end
+
+%generating the model using the proposed phase
+tPSF = [];
+for ii = 1:size(DelX,1)
+    tPSF = cat(4,tPSF,findPSF(Mag,SubPhase,Bg(ii),I(ii),DefocusK,Z+DelX(ii,3),Mask,...
+        SubPixelZeros,StartInd,EndInd,SubPixel,X+DelX(ii,1),Y+DelX(ii,2),...
+        XOffsetPhase,YOffsetPhase,Tform(ii),SigConv,CMOS_Noise(:,:,ii)));
+end
+
+%log-likelihood ratio
+DLogL = sum(Data(:).*(log(tPSF(:))-log(PSFstack(:)))-(tPSF(:)-PSFstack(:)));
+DLogL = DLogL/Temp;
+%propsal ratio and prior ratio are one
+
+if DLogL > log(rand())
+    Phase = tPhase;
+    tmpPhase = SubPhase;
+    PSFstack = tPSF;
+    AcceptJ = AcceptJ + 1;
+end
+%%
+
+%proposing new phase
+tMag = exp(log(Mag(:)) + 0.2*Sig*((randn([1,numel(Phase)])*Chol_A))');
+tMag = reshape(tMag,size(Mask));
+
+%generating the model using the proposed amplitude
+tPSF = [];
+for ii = 1:size(DelX,1)
+    tPSF = cat(4,tPSF,findPSF(tMag,tmpPhase,Bg(ii),I(ii),DefocusK,Z+DelX(ii,3),Mask,...
+        SubPixelZeros,StartInd,EndInd,SubPixel,X+DelX(ii,1),Y+DelX(ii,2),...
+        XOffsetPhase,YOffsetPhase,Tform(ii),SigConv,CMOS_Noise(:,:,ii)));
+end
+
+%log-likelihood ratio
+DLogL = sum(Data(:).*(log(tPSF(:))-log(PSFstack(:)))-(tPSF(:)-PSFstack(:)));
+DLogL = DLogL/Temp;
+
+LogPriorProp = 0;
+LogPriorOld = 0;
+
+LogPriorRatio = LogPriorProp - LogPriorOld;
+LogPostRatio = DLogL + LogPriorRatio;
+
+if LogPostRatio > log(rand())
+    Mag = tMag;
+    PSFstack = tPSF;
+    AcceptJ = AcceptJ + 1;
+end
+
+DEBUG  = 0;
+if DEBUG
+   figure(112);pcolor(Mag.*Mask);colorbar();title('Mag')
+   figure(114);pcolor(tmpPhase.*Mask);colorbar();title('Phase')
+end
+
+end

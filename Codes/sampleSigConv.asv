@@ -1,0 +1,44 @@
+function [SigConv,PSFstack,AcceptSig] = sampleSigConv(Data,Chain,PSFstack,...
+    DefocusK,Mask,DelX,AcceptSig,XOffsetPhase,YOffsetPhase,tmpPhase,...
+    SubPixelZeros,StartInd,EndInd,SubPixel,Tform,SigConv,CMOS_Noise)
+%This function samples the sigma of the Gaussian filter used to smoothen
+%the PSF (see supplementary Note 1).
+%
+%INPUTS
+% Data: the input data is a 4D array with the 3rd abd 4th dimension being
+%       the frames and the planes.
+% Chain: Chain of samples (for decription see "runPhaseRetrieval" help)
+% PSFstack: the current model 4D array with a size similar to the data
+% DefoucusK: phase due one nanometer offset with respect to focus
+% Z: z-trajectory (nm)
+% Mask: one over the frequency range passed by the objective and zero otherwise
+% SubPixelZeros: a zero frame with the subpixel size used in zero-padding
+% 
+
+Mag = Chain.Mag;
+Bg = Chain.Bg;
+I = Chain.I;
+X = Chain.X;
+Y = Chain.Y;
+Z = Chain.Z;
+
+Alpha = 10000;
+tmpSigConv = gamrnd(Alpha,SigConv/Alpha);
+
+tPSF = [];
+for ii = 1:size(DelX,1)
+    tPSF = cat(4,tPSF,findPSF(Mag,tmpPhase,Bg(ii),I(ii),DefocusK,Z+DelX(ii,3),Mask,...
+        SubPixelZeros,StartInd,EndInd,SubPixel,X+DelX(ii,1),Y+DelX(ii,2),...
+        XOffsetPhase,YOffsetPhase,Tform(ii),tmpSigConv,CMOS_Noise(:,:,ii)));
+end
+DLogL = sum(Data(:).*(log(tPSF(:))-log(PSFstack(:)))-(tPSF(:)-PSFstack(:)));
+PropLogL = log(gampdf(SigConv,Alpha,tmpSigConv/Alpha)) - log(gampdf(tmpSigConv,Alpha,SigConv/Alpha));
+PLogL = log(gampdf(tmpSigConv,1.5,1)) - log(gampdf(SigConv,1.5,1));
+
+if DLogL + PLogL + PropLogL > log(rand())
+    SigConv = tmpSigConv;
+    PSFstack = tPSF;
+    AcceptSig = AcceptSig + 1;
+end
+
+end
