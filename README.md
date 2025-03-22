@@ -81,5 +81,7 @@ To process your data, we would suggest modifying the script "example_experimenta
 
 # Support
 If you happen to hve any questions please shoot us an email at:
+
 Mohamadreza Fazel, fazel.mohamadreza@gmail.com
+
 Steve Presse, spresse@asu.edu
