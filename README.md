@@ -7,9 +7,13 @@ Julian Antolin, Kevin Lynn Scrudders, Douglas Shepherd, shalini Low-Nam, Fang Hu
 
 # Software package overview and how to use it
 The software package contains two example matlab scripts ("example_experimentalData.m" and "example_syntheticData.m") to analyze the experimental data and the synthetic data. The package also contains 4 folders: 
+
 "Codes" containing algorithm functions and methods; 
+
 "Data" containing a synthetic data set simulated assuming a bi-focal setup, 100 frames of data from each focal plane; and frames of 32x32 pixels. This is the data set used in Fig. S6. The experimental data set contains an in vitro data set obtained using a bi-focal setup, 150 frames from each focal plane, and 62x62 pixels per frame. This is the data set used to make Fig. 3. 
+
 "PlaneRegistration_ExpDataOnly" contains the tForm matrix characterizing relative shift and rotation between the two focal planes whcih was obtained using calibration data from very bright beads. This is only used for the experimental data.
+
 "ExpectedResults" contains two sub-folder each containing the expected outputs of the experimental and synthetic data analyses.
 
 To use this software package you need matlab 2023 or higher versions, matlab image processing toolbox and matlab statistics and machine learning toolbox. To run the software package, just open the example scripts and run them. It took almost one hour to finish analyzing the synthetic data and approximately 5 hours to analyze the experimental data on an AMD Ryzen 3.8 GHz 12-core processor. When done analyzing data the example scripts also plot the results. 
@@ -20,60 +24,104 @@ Data: input data is a 4D array with the 1st and 2nd dimensions are frame
        the fourth dimension is number of planes.
        
 Struct: structure containing experimental parameters
+
     Na: numerical aperture
+    
     N: refractive index
+    
     Lambda: fluorescence emission wavelength (nm)
+    
     PixelSize: pixel size (nm)
+    
     NPix: length of frames assumed to be square (pixel)
+    
     DelX: spatial (X,Y,Z) shifts across planes (nm)
+    
     ZImage: Zernike polynomials
+    
     Tform: The model for each plane is first generated with no XY-shift and rotation with 
            respect to the reference (first) plane. Tform is an array with the same size as the 
            number of planes where each element contains the affine transform (a 3x3 matrix) that
            transforms the generated model to match the input data. As such, its first element is 
            always a diagonal matrix corresponding to no XY-shift and rotation. Note that the 
            Z-differences across planes are given in the DelX parameter.
+           
 BNP: structure containing math framework parameters
+
     NJumps: number of samples from the posterior (chain length)
+    
     T_A: GP prior parameter on pupil magnitude (Default: 1)
+    
     L_A: GP prior parameter on pupil magnitude related to magnitude correlation
+    
     T_Phi: GP prior parameter on pupil phase (Default: 1)
+    
     L_Phi: GP prior parameter on pupil phase related to phase correlation
+    
     Dt: frame exposure time (ms)
+    
     SubPixel: subpixel resolution used in model calculations (Default: 1)
+    
 Xstart: initial X-trajectory
+
 Ystart: initial Y-trajectory
+
 TempFlag: indicating to use temporal sampling (1) or not (0) (Default: 0)
+
 CMOS_Noise: CMOS noise variance used in modeling data from CMOS cameras (Default: 0)
 
 # Outputs
 Chain: chain of samples containing the following parameters
+
     Mag: pupil magnitude
+    
     Phase: pupil phase
+    
     PSFstack: PSF model reconstructed from the last state of the chain
+    
     Bg: offset background (photons)
+    
     I: eitter intensity (photons)
+    
     X: X-trajectory (nm)
+    
     Y: Y-trajectory (nm)
+    
     Z: Z-trajectory (nm)
+    
     D: diffusion constant (nm^2/ms)
+    
     LogLike: log-likelihood
+    
     LogPost: log-posterior
+    
     SigConv: Sigma of the Gaussian convolved with the PSF
 
 # OUTPUT PLOTS
  Background_Samples: plot of the entire chain of sampled backgrounds 
+ 
  Background_Hist: histogram of the sampled backgrounds after chain convergence
+ 
  DiffusionConst_Hist: histogram of the sampled diffusion constants after chain convergence
+ 
  DiffusionConst_Samples: plot of the entire chain of sampled diffusion constants
+ 
  Learned_Magnitude: median of the sampled pupil amplitudes after chain convergence
+ 
  True_Magnitude: ground truth pupil amplitude
+ 
  Learned_Phase: median of the sampled pupil phases after chain convergence
+ 
  True_Phase: ground truth phase
+ 
  ParticleIntensity_Hist: histogram of the sampled particle intensities after chain convergence
+ 
  ParticleIntensity_Samples: plot of the entire chain of sampled particle intensities
+ 
  X-trajectory: plot of the median and 95% confidence interval of the sampled X-trajectories
+ 
  Y-trajectory: plot of the median and 95% confidence interval of the sampled Y-trajectories
+ 
  Z-trajectory: plot of the median and 95% confidence interval of the sampled Z-trajectories
 
 # How to process your data
