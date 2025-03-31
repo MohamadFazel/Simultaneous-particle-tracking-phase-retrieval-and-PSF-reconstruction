@@ -16,7 +16,7 @@ The software package contains two example matlab scripts ("example_experimentalD
 
 "ExpectedResults" contains two sub-folder each containing the expected outputs of the experimental and synthetic data analyses.
 
-To use this software package you need matlab 2023 or higher versions, matlab image processing toolbox and matlab statistics and machine learning toolbox. To run the software package, just open the example scripts and run them. It took almost one hour to finish analyzing the synthetic data and approximately 5 hours to analyze the experimental data on an AMD Ryzen 3.8 GHz 12-core processor. When done analyzing data the example scripts also plot the results. 
+To use this software package you need matlab 2023 or higher versions, matlab image processing toolbox and matlab statistics and machine learning toolbox. To run the software package, just open the example scripts and run them. It took almost one hour to finish analyzing the synthetic data and approximately 5 hours to analyze the experimental data on an AMD Ryzen 3.8 GHz 12-core processor. When done analyzing data the example scripts also plot the results. The generated results should be similar to those in the "ExpectedResults" folder.
 
 # Input parameters
 Data: input data is a 4D array with the 1st and 2nd dimensions are frame
@@ -97,7 +97,7 @@ Chain: chain of samples containing the following parameters
     
     SigConv: Sigma of the Gaussian convolved with the PSF
 
-# OUTPUT PLOTS
+# Output plots
  Background_Samples: plot of the entire chain of sampled backgrounds 
  
  Background_Hist: histogram of the sampled backgrounds after chain convergence
@@ -128,7 +128,7 @@ Chain: chain of samples containing the following parameters
 To process your data, we would suggest modifying the script "example_experimentalData.m" and adjusting the experimental parameters (fields of PSFstruct and Dt in BNP) for your data. The other parameters should be mostly fine as they are. To reduce the run-time pick a small ROI around the target particle so the PSF does not move outside the ROI for both planes. The number of frames should be selected so that the particle ideally explores a few hunderd nano-meters below and above the focal plane. We also emphasize that the affine transform should be calibrated so that it transforms the reference plane into the second plane NOT the opposite.
 
 # Support
-If you happen to hve any questions please shoot us an email at:
+If you happen to have any questions please shoot us an email at:
 
 Mohamadreza Fazel, fazel.mohamadreza@gmail.com
 
