@@ -16,11 +16,6 @@ function Out=blockresample(In,Zm)
 % REQUIRES: 
 %   MATLAB 2014a or later versions.
 %
-% CITATION:
-%   Mohamadreza Fazel, Michael J. Wester, Hanieh Mazloom-Farsibaf,
-%   Marjolein M.B.M. Meddens and Keith A. Lidek, "Bayesian Multiple Emitter
-%   Fitting using Reversible Jump Markov Chain Monte Carlo".
-%
 % Created by:
 %   Mohamadreza Fazel (Presse Lab 2022)
 %
