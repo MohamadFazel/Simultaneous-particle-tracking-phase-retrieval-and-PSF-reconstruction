@@ -2,8 +2,8 @@
 Mohamadreza Fazel, Reza Hoseini, Maryam Mahmoodi, Lance W. Q. Xu, Ayush Saurabh, Zeliha Kilic,
 Julian Antolin, Kevin L. Scrudders, Douglas Shepherd, shalini T. Low-Nam, Fang Huang, Steve Presse
 
-US Patent App. 18/425,056 
-bioRxiv, 2025.05. 02.651986
+US Patent App. 18/425,056        
+bioRxiv, 2025.05. 02.651986  
 https://doi.org/10.1101/2025.05.02.651986
 
 # Overview of the framework
